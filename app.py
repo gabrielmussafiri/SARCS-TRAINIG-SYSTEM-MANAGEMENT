@@ -1327,11 +1327,11 @@ def get_certificate_download_link(certificate_buf, filename="certificate.pdf"):
         return ""
 
 # Main UI
-st.markdown('<h1 class="main-header">⛑️ Red Cross Society - Trainers Management System</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">⛑️ The SARCS Western Cape - Trainers Management System</h1>', unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Flag_of_the_ICRC.svg/1200px-Flag_of_the_ICRC.svg.png", width=200)
+    st.image("https://i0.wp.com/redcross.org.za/wp-content/uploads/2020/06/HEADER-LOGO-ONLY.png?fit=3726%2C998&ssl=1", width=300)
     
     st.markdown('<div class="sidebar-header"><h2>Trainers Management</h2></div>', unsafe_allow_html=True)
     

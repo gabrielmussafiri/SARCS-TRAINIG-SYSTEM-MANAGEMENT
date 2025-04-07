@@ -1,0 +1,5 @@
+# Add this to your .gitignore file
+keys.json
+*.json
+!package.json
+temp_keys.json
