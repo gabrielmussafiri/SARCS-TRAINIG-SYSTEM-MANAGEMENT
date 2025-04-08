@@ -17,20 +17,11 @@ from reportlab.lib.pagesizes import A4
 import tempfile
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+
 from dotenv import load_dotenv , dotenv_values
 import google.auth
-from google.oauth2 import service_account
-import gspread
 
 load_dotenv()
-
-# Load credentials from secrets
-service_account_info = st.secrets["google_service_account"]
-creds = service_account.Credentials.from_service_account_info(service_account_info)
-
-# Authorize with gspread
-client = gspread.authorize(creds)
-sheet = client.open("your-google-sheet-name")
 
 # Page configuration
 st.set_page_config(
