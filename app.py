@@ -17,6 +17,10 @@ from reportlab.lib.pagesizes import A4
 import tempfile
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+import streamlit as st
+from dotenv import load_dotenv , dotenv_values
+
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -269,9 +273,11 @@ if 'available_sheets' not in st.session_state:
     st.session_state.available_sheets = []
 if 'sheet_data' not in st.session_state:
     st.session_state.sheet_data = {}
+    
+config = dotenv_values(".env")
 
 # Constants
-SPREADSHEET_ID = "1kLVnicbY6vdbSkG5LR21nDiHiLzCwwsptsuicpW6We4"
+SPREADSHEET_ID = config["SPREADSHEET_ID"]
 FINISHED_SHEET = "NAMESTHATFINISHED"
 METADATA_SHEET = "SHEET_METADATA"  # New sheet to store metadata about other sheets
 
@@ -314,7 +320,10 @@ def generate_qr_code_data(full_name, id_number, gender, cert_type, cert_no, issu
 
 # Google Sheets API Setup
 @st.cache_resource
+# In fix_sheet_access.py and any other files that use get_google_sheets_credentials()
+
 def get_google_sheets_credentials():
+    """Get Google Sheets API credentials."""
     try:
         # Try to get credentials from environment variables first
         if 'GOOGLE_CREDENTIALS' in os.environ:
@@ -327,16 +336,16 @@ def get_google_sheets_credentials():
             )
             # Remove the temporary file
             os.remove('temp_keys.json')
+            return creds
         else:
-            # Fall back to file-based credentials
+            # Fall back to file-based credentials (for development only)
             creds = service_account.Credentials.from_service_account_file(
                 'keys.json', scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
-        return creds
+            return creds
     except Exception as e:
-        st.error(f"Error loading credentials: {e}")
+        print(f"Error loading credentials: {e}")
         return None
-
 # Get credentials
 creds = get_google_sheets_credentials()
 

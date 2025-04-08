@@ -1,5 +1,5 @@
-# Add this to your .gitignore file
+# .gitignore
+.streamlit/secrets.toml
 keys.json
-*.json
-!package.json
 temp_keys.json
+.env
