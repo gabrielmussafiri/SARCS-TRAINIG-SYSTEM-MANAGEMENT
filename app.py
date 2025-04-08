@@ -19,6 +19,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import streamlit as st
 from dotenv import load_dotenv , dotenv_values
+import google.auth
 
 load_dotenv()
 
@@ -325,33 +326,64 @@ def generate_qr_code_data(full_name, id_number, gender, cert_type, cert_no, issu
 def get_google_sheets_credentials():
     """Get Google Sheets API credentials."""
     try:
-        # Try to get credentials from environment variables first
-        if 'GOOGLE_CREDENTIALS' in os.environ:
-            creds_info = os.environ['GOOGLE_CREDENTIALS']
-            # Write the credentials to a temporary file
-            with open('temp_keys.json', 'w') as f:
-                f.write(creds_info)
+        # First, try to get credentials from environment variables
+        if 'GOOGLE_CREDENTIALS' in os.environ and os.environ['GOOGLE_CREDENTIALS']:
+            print("Loading credentials from environment variable")
+            try:
+                # Check if it's a JSON string
+                creds_info = os.environ['GOOGLE_CREDENTIALS']
+                # Write the credentials to a temporary file
+                with open('temp_keys.json', 'w') as f:
+                    f.write(creds_info)
+                creds = service_account.Credentials.from_service_account_file(
+                    'temp_keys.json', 
+                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                )
+                # Remove the temporary file
+                os.remove('temp_keys.json')
+                return creds
+            except Exception as e:
+                print(f"Error parsing credentials from environment variable: {e}")
+                # Fall through to file-based approach
+        
+        # Next, try file-based credentials
+        if os.path.exists('keys.json'):
+            print("Loading credentials from keys.json file")
             creds = service_account.Credentials.from_service_account_file(
-                'temp_keys.json', scopes=["https://www.googleapis.com/auth/spreadsheets"]
-            )
-            # Remove the temporary file
-            os.remove('temp_keys.json')
-            return creds
-        else:
-            # Fall back to file-based credentials (for development only)
-            creds = service_account.Credentials.from_service_account_file(
-                'keys.json', scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                'keys.json', 
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             return creds
+        
+        # Finally, try Application Default Credentials
+        print("Attempting to use Application Default Credentials")
+        creds, project = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+        return creds
+        
     except Exception as e:
         print(f"Error loading credentials: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 # Get credentials
 creds = get_google_sheets_credentials()
 
+if creds is None:
+    st.error("Failed to load Google API credentials. Please check your configuration.")
+    st.stop()
+
 # Build the service
-service = build("sheets", "v4", credentials=creds)
-sheet = service.spreadsheets()
+try:
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+    st.success("Successfully connected to Google Sheets API")
+except Exception as e:
+    st.error(f"Error connecting to Google Sheets API: {e}")
+    import traceback
+    st.error(traceback.format_exc())
+    st.stop()
 
 # Function to get all sheets in the spreadsheet
 def get_all_sheets():
