@@ -278,7 +278,19 @@ if 'sheet_data' not in st.session_state:
 config = dotenv_values(".env")
 
 # Constants
-SPREADSHEET_ID = config["SPREADSHEET_ID"]
+# SPREADSHEET_ID = config["SPREADSHEET_ID"]
+config = dotenv_values(".env")
+
+# Constants
+# Try to get SPREADSHEET_ID from config or environment variables
+if "SPREADSHEET_ID" in config:
+    SPREADSHEET_ID = config["SPREADSHEET_ID"]
+elif "SPREADSHEET_ID" in os.environ:
+    SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+else:
+    # If not found, show an error
+    st.error("SPREADSHEET_ID not found in configuration or environment variables")
+    st.stop()
 FINISHED_SHEET = "NAMESTHATFINISHED"
 METADATA_SHEET = "SHEET_METADATA"  # New sheet to store metadata about other sheets
 
