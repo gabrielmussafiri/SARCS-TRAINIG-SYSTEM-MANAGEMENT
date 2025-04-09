@@ -274,8 +274,6 @@ if 'available_sheets' not in st.session_state:
     st.session_state.available_sheets = []
 if 'sheet_data' not in st.session_state:
     st.session_state.sheet_data = {}
-    
-config = dotenv_values(".env")
 
 # Constants
 # SPREADSHEET_ID = config["SPREADSHEET_ID"]
@@ -283,6 +281,7 @@ config = dotenv_values(".env")
 
 # Constants
 # Try to get SPREADSHEET_ID from config or environment variables
+
 if "SPREADSHEET_ID" in config:
     SPREADSHEET_ID = config["SPREADSHEET_ID"]
 elif "SPREADSHEET_ID" in os.environ:
@@ -333,53 +332,91 @@ def generate_qr_code_data(full_name, id_number, gender, cert_type, cert_no, issu
 
 # Google Sheets API Setup
 @st.cache_resource
-# In fix_sheet_access.py and any other files that use get_google_sheets_credentials()
-
 def get_google_sheets_credentials():
-    """Get Google Sheets API credentials."""
+    """Get Google Sheets API credentials, preferring st.secrets but falling back to keys.json."""
+
     try:
-        # First, try to get credentials from environment variables
-        if 'GOOGLE_CREDENTIALS' in os.environ and os.environ['GOOGLE_CREDENTIALS']:
-            print("Loading credentials from environment variable")
+        # 1. Check if secrets file exists (safe for local dev)
+        secrets_path = os.path.join(os.getcwd(), ".streamlit", "secrets.toml")
+        if os.path.exists(secrets_path):
             try:
-                # Check if it's a JSON string
-                creds_info = os.environ['GOOGLE_CREDENTIALS']
-                # Write the credentials to a temporary file
-                with open('temp_keys.json', 'w') as f:
-                    f.write(creds_info)
-                creds = service_account.Credentials.from_service_account_file(
-                    'temp_keys.json', 
+                creds_json = json.loads(st.secrets["google_credentials"])
+                creds = service_account.Credentials.from_service_account_info(
+                    creds_json,
                     scopes=["https://www.googleapis.com/auth/spreadsheets"]
                 )
-                # Remove the temporary file
-                os.remove('temp_keys.json')
                 return creds
             except Exception as e:
-                print(f"Error parsing credentials from environment variable: {e}")
-                # Fall through to file-based approach
-        
-        # Next, try file-based credentials
-        if os.path.exists('keys.json'):
-            print("Loading credentials from keys.json file")
+                st.warning(f"Found secrets.toml but failed to load: {e}")
+
+        # 2. Fallback to local keys.json
+        if os.path.exists("keys.json"):
             creds = service_account.Credentials.from_service_account_file(
-                'keys.json', 
+                "keys.json",
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             return creds
-        
-        # Finally, try Application Default Credentials
-        print("Attempting to use Application Default Credentials")
-        creds, project = google.auth.default(
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
-        return creds
-        
-    except Exception as e:
-        print(f"Error loading credentials: {e}")
-        import traceback
-        traceback.print_exc()
+
+        # 3. No credentials found
+        st.error("No credentials found. Please add keys.json or use .streamlit/secrets.toml")
         return None
-# Get credentials
+
+    except Exception as e:
+        st.error(f"Error loading credentials: {e}")
+        return None
+
+    """Get Google Sheets API credentials."""
+    try:
+        # 1. Use secrets if running on Streamlit Cloud
+        if "google_credentials" in st.secrets:
+            creds_json = json.loads(st.secrets["google_credentials"])
+            creds = service_account.Credentials.from_service_account_info(
+                creds_json,
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            return creds
+
+        # 2. Use local keys.json for development
+        if os.path.exists("keys.json"):
+            creds = service_account.Credentials.from_service_account_file(
+                "keys.json",
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            return creds
+
+        st.error("No credentials found. Please provide either st.secrets['google_credentials'] or keys.json.")
+        return None
+
+    except Exception as e:
+        st.error(f"Error loading credentials: {e}")
+        return None
+
+    """Securely load Google Sheets API credentials."""
+    try:
+        # 1. Load from Streamlit secrets (recommended for deployment)
+        if "google_credentials" in st.secrets:
+            creds_json = json.loads(st.secrets["google_credentials"])
+            creds = service_account.Credentials.from_service_account_info(
+                creds_json,
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            return creds
+
+        # 2. (Optional) Fallback to local keys.json for local dev
+        if os.path.exists('keys.json'):
+            creds = service_account.Credentials.from_service_account_file(
+                'keys.json',
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            return creds
+
+        st.error("Google credentials not found in secrets or keys.json")
+        return None
+
+    except Exception as e:
+        st.error(f"Error loading credentials: {e}")
+        return None
+
 creds = get_google_sheets_credentials()
 
 if creds is None:
