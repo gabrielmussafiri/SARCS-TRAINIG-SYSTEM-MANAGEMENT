@@ -705,6 +705,55 @@ def get_next_certificate_number(sheet_name):
                 new_cert_number = cert_format.replace("{number}", str(next_number))
             elif "{####}" in cert_format:
                 # 4-digit number with leading zeros
+                prefix = cert_format.split("{####}")[0]  # Get the prefix (non-numeric part)
+                numeric_part = int(last_number.split(prefix)[-1])  # Extract the numeric part
+                next_number = numeric_part + 1
+                new_cert_number = f"{prefix}{next_number:04d}"  # Keep leading zeros
+            elif "{###}" in cert_format:
+                # 3-digit number with leading zeros
+                prefix = cert_format.split("{###}")[0]  # Get the prefix (non-numeric part)
+                numeric_part = int(last_number.split(prefix)[-1])  # Extract the numeric part
+                next_number = numeric_part + 1
+                new_cert_number = f"{prefix}{next_number:03d}"  # Keep leading zeros
+            elif "{##}" in cert_format:
+                # 2-digit number with leading zeros
+                prefix = cert_format.split("{##}")[0]  # Get the prefix (non-numeric part)
+                numeric_part = int(last_number.split(prefix)[-1])  # Extract the numeric part
+                next_number = numeric_part + 1
+                new_cert_number = f"{prefix}{next_number:02d}"  # Keep leading zeros
+        
+        # Update the last certificate number in metadata
+        update_sheet_metadata(sheet_name, "last_cert_number", str(next_number))
+        
+        return new_cert_number
+    except Exception as e:
+        st.error(f"Error generating certificate number: {e}")
+        return ""
+
+    try:
+        metadata = load_sheet_metadata()
+        
+        if sheet_name not in metadata:
+            st.error(f"Sheet '{sheet_name}' not found in metadata")
+            return ""
+        
+        cert_format = metadata[sheet_name]["cert_format"]
+        last_number = metadata[sheet_name]["last_cert_number"]
+        
+        # Check if the format contains any placeholders
+        if "{number}" not in cert_format and "{####}" not in cert_format and "{###}" not in cert_format and "{##}" not in cert_format:
+            # No placeholders - use the format as-is with an incrementing number at the end
+            next_number = int(last_number) + 1
+            new_cert_number = f"{cert_format}{next_number}"
+        else:
+            # Find the numeric part in the format
+            # The format should contain a placeholder like {number} or {####}
+            if "{number}" in cert_format:
+                # Simple incrementing number
+                next_number = int(last_number) + 1
+                new_cert_number = cert_format.replace("{number}", str(next_number))
+            elif "{####}" in cert_format:
+                # 4-digit number with leading zeros
                 next_number = int(last_number) + 1
                 new_cert_number = cert_format.replace("{####}", f"{next_number:04d}")
             elif "{###}" in cert_format:
@@ -1077,13 +1126,13 @@ def mark_trainer_as_finished(sheet_name, index):
         st.error(f"Error marking trainer as finished: {e}")
         return False
 
-# Function to check if ID exists in any sheet
-def check_id_exists(id_number, exclude_sheet=None):
+# Function to check if Certificate Number exists in any sheet
+def check_certificate_exists(certificate_no, exclude_sheet=None):
     try:
         # Check FINISHED_SHEET first
         finished_data = get_data(FINISHED_SHEET)
-        if not finished_data.empty and 'ID number' in finished_data.columns:
-            if id_number in finished_data['ID number'].values:
+        if not finished_data.empty and 'Certificate No.' in finished_data.columns:
+            if certificate_no in finished_data['Certificate No.'].values:
                 return True, FINISHED_SHEET
         
         # Check all other sheets
@@ -1094,16 +1143,16 @@ def check_id_exists(id_number, exclude_sheet=None):
             # Skip sheets that don't exist or can't be loaded
             try:
                 sheet_data = get_data(sheet_name)
-                if not sheet_data.empty and 'ID number' in sheet_data.columns:
-                    if id_number in sheet_data['ID number'].values:
+                if not sheet_data.empty and 'Certificate No.' in sheet_data.columns:
+                    if id_number in sheet_data['Certificate No.'].values:
                         return True, sheet_name
             except Exception as e:
-                st.warning(f"Could not check IDs in sheet {sheet_name}: {e}")
+                st.warning(f"Could not check Certificate's in sheet {sheet_name}: {e}")
                 continue
         
         return False, None
     except Exception as e:
-        st.error(f"Error checking ID existence: {e}")
+        st.error(f"Error checking Certificate existence: {e}")
         return False, None
 
 # Function to Generate QR Code
@@ -1146,19 +1195,19 @@ def get_qr_download_link(qr_buf, filename="qrcode.png"):
 
 # Function to validate form data
 def validate_form_data(form_data):
-    required_fields = ["Name(s)", "Surname", "Full Name", "ID number"]
+    required_fields = ["Name(s)", "Surname", "Full Name", "Certificate No."]
     errors = []
     
     for field in required_fields:
         if not form_data.get(field):
             errors.append(f"{field} is required")
     
-    # Check if ID already exists in any sheet
-    id_number = form_data.get("ID number")
-    if id_number:
-        exists, sheet_name = check_id_exists(id_number)
+    # Check if Certificate No already exists in any sheet
+    certificate_no = form_data.get("Certificate No.")
+    if certificate_no:
+        exists, sheet_name = check_certificate_exists(certificate_no)
         if exists:
-            errors.append(f"ID number {id_number} already exists in sheet {sheet_name}")
+            errors.append(f"Certificate No. {certificate_no} already exists in sheet {sheet_name}")
     
     return errors
 
@@ -1191,7 +1240,7 @@ def save_edited_trainer():
         new_id = st.session_state.edit_data.get("ID number")
         
         if original_id != new_id:
-            exists, existing_sheet = check_id_exists(new_id, exclude_sheet=sheet_name)
+            exists, existing_sheet = check_certificate_exists(new_id, exclude_sheet=sheet_name)
             if exists:
                 st.error(f"ID number {new_id} already exists in sheet {existing_sheet}")
                 return False
