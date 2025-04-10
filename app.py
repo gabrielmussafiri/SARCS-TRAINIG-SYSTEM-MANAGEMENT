@@ -324,6 +324,9 @@ def sanitize_sheet_name(name):
 def generate_qr_code_data(full_name, id_number, gender, cert_type, cert_no, issue_date):
     """Generate consistent QR code data string."""
     formatted_date = format_date_to_dd_mm_yyyy(issue_date)
+     # Convert list to clean string if necessary
+    if isinstance(cert_type, list):
+        cert_type = ", ".join(cert_type)
     
     return (f"Full Name: {full_name} -- ID No: {id_number} -- Gender: {gender} -- "
             f"Course: {cert_type} -- Cert. No: {cert_no} -- Issue Date: {formatted_date} -- "
@@ -1622,7 +1625,7 @@ if st.session_state.editing:
             edit_data["Name(s)"] = st.text_input("Name(s)", value=edit_data.get("Name(s)", ""))
             edit_data["ID number"] = st.text_input("ID Number", value=edit_data.get("ID number", ""))
             edit_data["Contact No."] = st.text_input("Contact No.", value=edit_data.get("Contact No.", ""))
-            edit_data["Nationality"] = st.text_input("Nationality", value=edit_data.get("Nationality", "South African"))
+            edit_data["Nationality"] = st.text_input("Nationality", value=edit_data.get("Nationality", "SOUTH AFRICAN"))
         
         with col2:
             edit_data["Surname"] = st.text_input("Surname", value=edit_data.get("Surname", ""))
@@ -1646,10 +1649,15 @@ if st.session_state.editing:
         with col1:
             # Use dropdown for certification type
             edit_data["Type of Certification"] = st.text_input("Type of Certification", value=edit_data.get("Type of Certification", ""))
+            # edit_data["Type of Certification"] = st.selectbox(
+            #     "Type of Certification", 
+            #     ["HOME BASED CARE LEVEL ONE", "HOME BASED CARE LEVEL 2 & 3", "FIRST AID LEVEL ONE","FIRST AID LEVEL 2 & 3" , "FUTHER EDUCATION TRAINING CERTIFICATE COMMUNITY HEALTH WORK NQF LEVEL 4"], 
+            #     index=["HOME BASED CARE LEVEL ONE", "HOME BASED CARE LEVEL 2 & 3", "FIRST AID LEVEL ONE","FIRST AID LEVEL 2 & 3" , "FUTHER EDUCATION TRAINING CERTIFICATE COMMUNITY HEALTH WORK NQF LEVEL 4"]
+            # )
             
-            # Certificate number
-            current_cert_no = edit_data.get("Certificate No.", "")
-            edit_data["Certificate No."] = st.text_input("Certificate No.", value=current_cert_no)
+            # # Certificate number
+            # current_cert_no = edit_data.get("Certificate No.", "")
+            # edit_data["Certificate No."] = st.text_input("Certificate No.", value=current_cert_no)
         
         with col2:
             # Handle date input - convert string to date if needed
@@ -2044,9 +2052,14 @@ elif option == "Add Trainer" and not st.session_state.editing and not st.session
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # Use the selected sheet's display name as the certification type
-                    certification_type = selected_sheet_display
-                    st.write(f"Type of Certification: **{certification_type}**")
+                    certificate_options = ["FIRST AID LEVEL 1", "FIRST AID LEVEL 2 & 3", "HOME BASED CARE LEVEL 1", "HOME BASED CARE LEVEL 2 & 3"]
+                    # Let the user select one or more certificate types
+                    certification_type = st.multiselect("Select Certification Type(s)", certificate_options)
+                    if certification_type:
+                        formatted_type = ", ".join(certification_type)  # Convert list tostring
+                        st.write(f"Type of Certification: **{formatted_type}**")
+                    
+                    
                     
                     # Certificate number - can be auto-generated or manually entered
                     suggested_cert_no = get_next_certificate_number(selected_sheet_name)
