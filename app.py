@@ -906,6 +906,10 @@ def add_data(sheet_name, row):
     # Sanitize inputs to prevent potential injection
     sanitized_row = []
     for item in row:
+        # Convert lists (like ['FIRST AID LEVEL 1']) to strings
+        if isinstance(item, list):
+            item = ", ".join(map(str, item))
+            
         if isinstance(item, str):
             # Remove any potentially harmful characters
             sanitized_item = item.replace('=', '').replace('+', '').replace('-', '')
@@ -2063,7 +2067,7 @@ elif option == "Add Trainer" and not st.session_state.editing and not st.session
                     
                     # Certificate number - can be auto-generated or manually entered
                     suggested_cert_no = get_next_certificate_number(selected_sheet_name)
-                    use_suggested = st.checkbox("Use auto-generated certificate number", value=True)
+                    use_suggested = st.checkbox("Use auto-generated certificate number", value=False)
                     if use_suggested:
                         certificate_no = suggested_cert_no
                         st.write(f"Certificate Number: {suggested_cert_no}")
