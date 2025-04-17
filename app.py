@@ -2056,7 +2056,7 @@ elif option == "Add Trainer" and not st.session_state.editing and not st.session
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    certificate_options = ["FIRST AID LEVEL 1", "FIRST AID LEVEL 2 & 3", "HOME BASED CARE LEVEL 1", "HOME BASED CARE LEVEL 2 & 3"]
+                    certificate_options = ["FIRST AID LEVEL ONE", "FIRST AID LEVEL 2 & 3", "HOME BASED CARE LEVEL 1", "HOME BASED CARE LEVEL 2 & 3"]
                     # Let the user select one or more certificate types
                     certification_type = st.multiselect("Select Certification Type(s)", certificate_options)
                     if certification_type:
